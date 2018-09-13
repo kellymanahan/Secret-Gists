@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 
+
 require('dotenv').config();
 const fs = require('fs');
 const bodyParser = require('body-parser');
@@ -8,7 +9,7 @@ const octokit = require('@octokit/rest');
 const nacl = require('tweetnacl');
 nacl.util = require('tweetnacl-util');
 
-const username = 'your_name_here'; // TODO: Replace with your username
+const username = 'kellymanahans'; // TODO: Replace with your username
 // The object you'll be interfacing with to communicate with github
 const github = octokit({ debug: true });
 const server = express();
@@ -24,9 +25,30 @@ github.authenticate({
 });
 
 // TODO:  Attempt to load the key from config.json.  If it is not found, create a new 32 byte key.
-
+let secretKey
+try {
+  //open config.json
+  const data = fs.readFileSync('./config.json')
+  //parse Json string
+  const keyObject = JSON.parse(data)
+  //NaCl want the key to be a __________?
+  secretKey = nacl.util.decodeBase64(keyObject.secretKey)
+}
+// ii. if not( no file, no key, ...), generate one!
+catch(err){
+  secretKey = nacl.randomBtyes(32)
+  //create key object as a __ to keep NaCl hapy
+  const keyObject = { secretKey: nacl.util.encodeBase64(secretKey)}
+  fs.writeFile('./config.json', JSONstringify(keyObject),(ferr) => {
+    if (ferr){
+      consile.log('Error writing secret key to config file: ', ferr.message)
+      return
+    }
+  });
+}
 server.get('/', (req, res) => {
-  // Return a response that documents the other routes/operations available
+
+  
   res.send(`
     <html>
       <header><title>Secret Gists!</title></header>
@@ -110,21 +132,31 @@ server.get('/gists', (req, res) => {
 
 server.get('/key', (req, res) => {
   // TODO: Display the secret key used for encryption of secret gists
+  res.send(nacl.util.encodeBase64(secretKey))
 });
 
 server.get('/setkey:keyString', (req, res) => {
   // TODO: Set the key to one specified by the user or display an error if invalid
   const keyString = req.query.keyString;
   try {
-    // TODO:
+    secretKey = nacl.util.decodeBase64(keyString)
+    const keyObject = { secretKey: nacl.util.encodeBase64(secretKey)}
+    fs.writeFile('./config.json', JSONstringify(keyObject),(ferr) => {
+      if (ferr){
+        consile.log('Error writing secret key to config file: ', ferr.message)
+        return
+      }
+    });
+    res.send('key changed successfully')
   } catch (err) {
     // failed
     res.send('Failed to set key.  Key string appears invalid.');
   }
 });
 
-server.get('/fetchmessagefromself:id', (req, res) => {
+server.get('/etchmessagefromself:id', (req, res) => {
   // TODO:  Retrieve and decrypt the secret gist corresponding to the given ID
+  const keyString = req.query
 });
 
 server.post('/create', urlencodedParser, (req, res) => {
